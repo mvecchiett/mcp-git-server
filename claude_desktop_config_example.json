@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "git-server": {
+      "command": "python",
+      "args": [
+        "C:\\DesarrolloPython\\MCP Git Server\\git_server.py"
+      ],
+      "env": {
+        "GIT_ALLOWED_DIRS": "C:\\DesarrolloPython;C:\\DesarrolloC#;C:\\DesarrolloBSI",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}
