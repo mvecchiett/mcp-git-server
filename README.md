@@ -259,6 +259,6 @@ Este es un proyecto personal de demostración. Si encontrás bugs o mejoras, sen
 
 ---
 
-**Creado por**: [Tu Nombre]  
+**Creado por**: Claudia, Eva y Marcelo Vecchiett
 **Tecnologías**: Python, MCP, Git  
 **Propósito**: Demostración de integración LLM + Git con controles de seguridad
