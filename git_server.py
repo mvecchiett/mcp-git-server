@@ -165,10 +165,15 @@ def run_git_command(args: List[str], cwd: Optional[str] = None) -> Dict[str, Any
         cmd = ['git'] + args
         
         # Ejecutar comando
+        # CRÍTICO: stdin=subprocess.DEVNULL evita que Git se cuelgue esperando input
+        # cuando el MCP usa stdio_server(). Sin esto, Git puede esperar credenciales
+        # o confirmaciones indefinidamente.
         result = subprocess.run(
             cmd,
             cwd=cwd,
-            capture_output=True,
+            stdin=subprocess.DEVNULL,  # FIX: Evita bloqueo esperando input
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
             encoding='utf-8',
             errors='replace'
@@ -539,11 +544,21 @@ async def handle_call_tool(name: str, arguments: dict) -> list[TextContent]:
             path = arguments.get("path")
             initial_branch = arguments.get("initial_branch", "main")
             
+            # Inicializar sin -b (compatible con versiones antiguas de Git)
             args = ['init']
-            if initial_branch:
-                args.extend(['-b', initial_branch])
-            
             result = run_git_command(args, cwd=path)
+            
+            # Si se especificó una rama inicial y el init fue exitoso,
+            # renombrar la rama actual (compatible con Git < 2.28)
+            if result["success"] and initial_branch and initial_branch != "master":
+                # Renombrar rama usando symbolic-ref (compatible con todas las versiones)
+                branch_result = run_git_command(
+                    ['symbolic-ref', 'HEAD', f'refs/heads/{initial_branch}'],
+                    cwd=path
+                )
+                # Si falla el rename, agregar warning pero mantener el resultado exitoso del init
+                if not branch_result["success"]:
+                    result["error"] += f"\nWarning: Repository initialized but could not set initial branch to '{initial_branch}'"
             
             return [TextContent(
                 type="text",
@@ -832,7 +847,7 @@ async def main() -> None:
             write_stream,
             InitializationOptions(
                 server_name="git-mcp",
-                server_version="1.0.0",
+                server_version="1.1.0",  # Fix: stdin=DEVNULL para evitar bloqueos
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),
                     experimental_capabilities={},
